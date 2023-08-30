@@ -132,7 +132,7 @@ class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNearbyConne
 	}
 	
 	func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-		activeConnections[response.notification.request.content.userInfo["transferID"]! as! String]?.submitUserConsent(accepted: response.actionIdentifier=="ACCEPT")
+		activeConnections[response.notification.request.content.userInfo["transferID"]! as! String]?.submitUserConsent(accepted: response.actionIdentifier=="ACCEPT" || response.actionIdentifier=="ACCEPTANDREMEMBER", rememberDevice: response.actionIdentifier=="ACCEPTANDREMEMBER")
 		completionHandler()
 	}
 }

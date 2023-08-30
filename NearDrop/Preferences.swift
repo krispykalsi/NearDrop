@@ -8,7 +8,7 @@
 enum Preferences {
 	@UserDefault(key: "openLinks", defaultValue: true)
 	static var openLinksInBrowser: Bool
-	
-	@UserDefault(key: "copyWithoutConsent", defaultValue: true)
-	static var copyToClipboardWithoutConsent: Bool
+
+	@UserDefault(key: "rememberedDeviceNames", defaultValue: [])
+	static var rememberedDevices: [String]
 }

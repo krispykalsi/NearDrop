@@ -15,21 +15,9 @@ class AppDelegate: NSObject, NSApplicationDelegate{
 	private var statusItem:NSStatusItem?
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-		let menu=NSMenu()
-		menu.addItem(withTitle: NSLocalizedString("VisibleToEveryone", value: "Visible to everyone", comment: ""), action: nil, keyEquivalent: "")
-		menu.addItem(withTitle: String(format: NSLocalizedString("DeviceName", value: "Device name: %@", comment: ""), arguments: [Host.current().localizedName!]), action: nil, keyEquivalent: "")
-		menu.addItem(NSMenuItem.separator())
-		let copyToClipboardItem = menu.addItem(withTitle: NSLocalizedString("CopyToClipboardWithoutConsent", value: "Copy to clipboard without consent", comment: ""), action: #selector(toggleOption(_:)), keyEquivalent: "")
-		copyToClipboardItem.state = Preferences.copyToClipboardWithoutConsent ? .on : .off
-		copyToClipboardItem.tag = .copyToClipboard
-		let openLinksItem = menu.addItem(withTitle: NSLocalizedString("OpenLinksInBrowser", value: "Open links in default browser", comment: ""), action: #selector(toggleOption(_:)), keyEquivalent: "")
-		openLinksItem.state = Preferences.openLinksInBrowser ? .on : .off
-		openLinksItem.tag = .openLinks
-		menu.addItem(NSMenuItem.separator())
-		menu.addItem(withTitle: NSLocalizedString("Quit", value: "Quit NearDrop", comment: ""), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
 		statusItem=NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 		statusItem?.button?.image=NSImage(named: "MenuBarIcon")
-		statusItem?.menu=menu
+		updateMenu()
 		
 		let nc=UNUserNotificationCenter.current()
 		nc.requestAuthorization(options: [.alert, .sound]) { granted, err in
@@ -43,6 +31,28 @@ class AppDelegate: NSObject, NSApplicationDelegate{
 		let errorsCategory=UNNotificationCategory(identifier: "ERRORS", actions: [], intentIdentifiers: [])
 		nc.setNotificationCategories([incomingTransfersCategory, errorsCategory])
         connectionManager=NearbyConnectionManager()
+    }
+    
+    func updateMenu() {
+        let menu=NSMenu()
+        menu.addItem(withTitle: NSLocalizedString("VisibleToEveryone", value: "Visible to everyone", comment: ""), action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: String(format: NSLocalizedString("DeviceName", value: "Device name: %@", comment: ""), arguments: [Host.current().localizedName!]), action: nil, keyEquivalent: "")
+        menu.addItem(NSMenuItem.separator())
+        let openLinksItem = menu.addItem(withTitle: NSLocalizedString("OpenLinksInBrowser", value: "Open links in default browser", comment: ""), action: #selector(toggleOption(_:)), keyEquivalent: "")
+        openLinksItem.state = Preferences.openLinksInBrowser ? .on : .off
+        openLinksItem.tag = .openLinks
+        menu.addItem(NSMenuItem.separator())
+        if !Preferences.rememberedDevices.isEmpty {
+            menu.addItem(withTitle: NSLocalizedString("RememberedDevices", value: "Remembered devices (click to remove)", comment: ""), action: nil, keyEquivalent: "")
+        }
+        for deviceName in Preferences.rememberedDevices {
+            let menuItem = NSMenuItem(title: deviceName, action: #selector(removeDevice(_:)), keyEquivalent: "")
+            menuItem.target = self
+            menu.addItem(menuItem)
+        }
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(withTitle: NSLocalizedString("Quit", value: "Quit NearDrop", comment: ""), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
+        statusItem?.menu=menu
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -72,14 +82,19 @@ class AppDelegate: NSObject, NSApplicationDelegate{
 		let shouldBeOn = sender.state != .on
 		sender.state = shouldBeOn ? .on : .off
 		switch sender.tag {
-		case .copyToClipboard:
-			Preferences.copyToClipboardWithoutConsent = shouldBeOn
 		case .openLinks:
 			Preferences.openLinksInBrowser = shouldBeOn
 		default:
 			print("Unhandled toggle menu action")
 		}
 	}
+    
+    @objc func removeDevice(_ sender: NSMenuItem) {
+        if let index = Preferences.rememberedDevices.firstIndex(of: sender.title) {
+            Preferences.rememberedDevices.remove(at: index)
+            updateMenu()
+        }
+    }
 }
 
 // MARK: - Menu item tags
