@@ -13,6 +13,7 @@ import System
 
 import SwiftECC
 import BigInt
+import AppKit
 
 class InboundNearbyConnection: NearbyConnection{
 	
@@ -285,7 +286,7 @@ class InboundNearbyConnection: NearbyConnection{
 			}
 			metadata = .files(transferredFiles.map({$0.value.meta}))
 		}
-		if case .text = metadata, Preferences.copyToClipboardWithoutConsent{
+		if case .text = metadata, let deviceName = self.remoteDeviceInfo?.name, Preferences.rememberedDevices.contains(deviceName){
 			self.acceptTransfer()
 		} else {
 			DispatchQueue.main.async {
@@ -294,9 +295,17 @@ class InboundNearbyConnection: NearbyConnection{
 		}
 	}
 	
-	func submitUserConsent(accepted:Bool){
+	func submitUserConsent(accepted:Bool, rememberDevice:Bool){
 		DispatchQueue.global(qos: .utility).async {
 			if accepted{
+				if rememberDevice, let deviceName = self.remoteDeviceInfo?.name{
+					Preferences.rememberedDevices.append(deviceName)
+					DispatchQueue.main.async {
+						if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
+							appDelegate.updateMenu()
+						}
+					}
+				}
 				self.acceptTransfer()
 			}else{
 				self.rejectTransfer()
